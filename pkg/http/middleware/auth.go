@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func JwtAuthMiddleware() gin.HandlerFunc {
+func IsUserAuthenticatedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		err := tokenUtils.ValidateAccessToken(c)
 		if err != nil {
@@ -18,7 +18,7 @@ func JwtAuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-func JwtAuthRefreshTokenMiddleware() gin.HandlerFunc {
+func IsUserAllowedToRefreshTokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, err := tokenUtils.ValidateRefreshToken(c)
 		if err != nil {

@@ -2,12 +2,13 @@ package auth
 
 import (
 	"acourse-auth-user-service/pkg/http/requests"
-	"acourse-auth-user-service/pkg/models"
+	model "acourse-auth-user-service/pkg/models"
 	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
+	"github.com/go-sql-driver/mysql"
+	"gorm.io/gorm"
 	"net/http"
 )
 
@@ -20,12 +21,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	user := UserModel.User{}
-
-	user.Username = input.Username
-	user.Password = input.Password
-
-	pairToken, err := UserModel.Authenticate(user.Username, user.Password)
+	pairToken, err := model.AuthenticateUser(input.Email, input.Password)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -45,14 +41,28 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	user := UserModel.User{}
+	user := model.User{}
 
 	user.Username = input.Username
 	user.Password = input.Password
 	user.Email = input.Email
 	user.PhoneNumber = input.PhoneNumber
 
-	_, err := user.Create()
+	_, err := user.CreateUser()
+
+	if err != nil {
+
+		mysqlErr := err.(*mysql.MySQLError)
+
+		switch mysqlErr.Number {
+		case 1062:
+			c.JSON(http.StatusBadRequest, gin.H{"error": mysqlErr.Message})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -67,11 +77,12 @@ func CurrentUser(c *gin.Context) {
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
 
 	if err != nil {
+
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := UserModel.Find(userId)
+	user, err := model.FindUser(userId)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -99,7 +110,7 @@ func RefreshToken(c *gin.Context) {
 
 			user_id := uint(claims["user_id"].(float64))
 
-			_, err := UserModel.Find(user_id)
+			_, err := model.FindUser(user_id)
 
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -110,7 +121,7 @@ func RefreshToken(c *gin.Context) {
 			newRefreshToken, err := tokenUtils.GenerateRefershToken(user_id)
 
 			c.JSON(http.StatusOK, gin.H{
-				"token":         newAccessToken,
+				"access_token":  newAccessToken,
 				"refresh_token": newRefreshToken,
 			})
 		}
@@ -132,14 +143,14 @@ func ChangePassword(c *gin.Context) {
 		Check if user exist by email, then
 		create the reset token for intended user
 	*/
-	user, err := UserModel.FindByEmail(input.Email)
+	user, err := model.FindUserByEmail(input.Email)
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusOK, gin.H{"message": "Email is not exists"})
 		return
 	}
 
-	user.IssueResetToken()
+	user.IssueResetTokenUser()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reset Token has been set"})
 
@@ -176,8 +187,8 @@ func ResetPassword(c *gin.Context) {
 		userId := uint(claims["user_id"].(float64))
 
 		if claims["user_id"] != "" {
-			//Find A User and Update the password
-			user, _ := UserModel.Find(userId)
+			//FindUser A User and Update the password
+			user, _ := model.FindUser(userId)
 
 			/*
 				But we also need to check that the reset token also exist in the user record,
@@ -191,9 +202,9 @@ func ResetPassword(c *gin.Context) {
 				return
 			}
 
-			user.RemoveResetToken()
+			user.RemoveResetTokenUser()
 
-			err := user.UpdatePassword(input.Password)
+			err := user.UpdateUserPassword(input.Password)
 
 			if err != nil {
 				c.JSON(http.StatusOK, gin.H{

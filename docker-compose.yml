@@ -1,0 +1,59 @@
+version: "3"
+
+services:
+
+  db:
+    image: mariadb:latest
+    container_name: acourse_auth_user_db
+    environment:
+      MYSQL_ROOT_HOST: "${DB_HOST}"
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_DATABASE: "${DB_NAME}"
+      MYSQL_USER: "${DB_HOST}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - 33066:${DB_PORT}
+    volumes:
+      - db_vol:/var/lib/mysql
+      - ./containers/mariadb/config:/etc/mysql
+    networks:
+      - default
+
+  app:
+    container_name: acourse-auth-user-service-v1
+#    environment:
+#      - APP_DEBUG="${APP_DEBUG}"
+#      - DB_HOST=db
+#      - DB_DRIVER="${DB_DRIVER}"
+#      - DB_PASSWORD="${DB_PASSWORD}"
+#      - DB_NAME="${DB_NAME}"
+#      - DB_USER="${DB_USER}"
+#      - JWT_ACCESS_TOKEN_SECRET="${JWT_ACCESS_TOKEN_SECRET}"
+#      - JWT_REFRESH_TOKEN_SECRET="${JWT_REFRESH_TOKEN_SECRET}"
+#      - JWT_RESET_TOKEN_SECRET="${JWT_RESET_TOKEN_SECRET}"
+#      - ACCESS_TOKEN_HOUR_LIFESPAN="${ACCESS_TOKEN_HOUR_LIFESPAN}"
+#      - REFRESH_TOKEN_DAY_LIFESPAN="${REFRESH_TOKEN_DAY_LIFESPAN}"
+#      - RESET_TOKEN_MINUTE_LIFESPAN="${RESET_TOKEN_MINUTE_LIFESPAN}"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:${APP_PORT}
+    restart: on-failure
+    volumes:
+      - app_vol:/app
+    depends_on:
+      - db
+    networks:
+      - default
+
+
+
+volumes:
+  app_vol:
+  db_vol:
+
+networks:
+  default:
+    driver: bridge
+

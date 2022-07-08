@@ -2,7 +2,9 @@ package routes
 
 import (
 	AuthController "acourse-auth-user-service/pkg/http/controllers/auth"
-	authMiddleware "acourse-auth-user-service/pkg/middleware"
+	RoleController "acourse-auth-user-service/pkg/http/controllers/role"
+	UserController "acourse-auth-user-service/pkg/http/controllers/user"
+	authMiddleware "acourse-auth-user-service/pkg/http/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,11 +18,15 @@ func RegisterRoutes(route *gin.Engine) {
 	public.POST("/reset-password", AuthController.ResetPassword)
 
 	protected := route.Group("/api/auth")
-	protected.Use(authMiddleware.JwtAuthMiddleware())
-	protected.GET("/current-user", AuthController.CurrentUser)
+	protected.Use(authMiddleware.IsUserAuthenticatedMiddleware())
+	protected.GET("/user/all", UserController.All)
+	protected.GET("/user/current", AuthController.CurrentUser)
+	protected.POST("/user/update/:id", UserController.Update)
+	protected.DELETE("/user/delete/:id", UserController.Delete)
+	protected.GET("/role", RoleController.Find)
 
 	refreshToken := route.Group("/api/auth")
-	refreshToken.Use(authMiddleware.JwtAuthRefreshTokenMiddleware())
+	refreshToken.Use(authMiddleware.IsUserAllowedToRefreshTokenMiddleware())
 	refreshToken.GET("/token/refresh", AuthController.RefreshToken)
 
 }
