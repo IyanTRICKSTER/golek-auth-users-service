@@ -16,7 +16,7 @@ func main() {
 	}
 
 	//Enable Gin Debugging Mode
-	gin.SetMode(gin.ReleaseMode)
+	//gin.SetMode(gin.ReleaseMode)
 
 	engine := gin.Default()
 

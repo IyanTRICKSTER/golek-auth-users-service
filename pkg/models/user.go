@@ -93,7 +93,7 @@ func (u *User) BeforeSave(*gorm.DB) error {
 	//remove spaces in username
 	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
 
-	log.Println("CREATE USER: OK")
+	log.Println("BEFORE SAVE USER: OK")
 	return nil
 
 }
@@ -189,8 +189,14 @@ func (user *User) RemoveResetTokenUser() {
 }
 
 func VerifyUserPassword(password, hashedPassword string) error {
+
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		log.Println("USER VERIFY PASSWORD:", err.Error())
+		return err
+	}
 	log.Println("USER VERIFY PASSWORD: OK")
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return nil
 }
 
 func AuthenticateUser(email string, password string) (interface{}, error) {
@@ -200,14 +206,14 @@ func AuthenticateUser(email string, password string) (interface{}, error) {
 	err := database.GetConnection().Model(User{}).Where("email = ?", email).Take(&u).Error
 
 	if err != nil {
-		log.Println("AUTHENTICATE USER: ", err.Error())
+		log.Println("AUTHENTICATE USER:", err.Error())
 		return "", err
 	}
 
 	err = VerifyUserPassword(password, u.Password)
 
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		log.Println("AUTHENTICATE USER: ", err.Error())
+		log.Println("AUTHENTICATE USER:", err.Error())
 		return "", err
 	}
 
@@ -215,7 +221,7 @@ func AuthenticateUser(email string, password string) (interface{}, error) {
 	refreshToken, err := tokenUtils.GenerateRefershToken(u.ID)
 
 	if err != nil {
-		log.Println("AUTHENTICATE USER: ", err.Error())
+		log.Println("AUTHENTICATE USER:", err.Error())
 		return "", err
 	}
 

@@ -3,6 +3,7 @@ package auth
 import (
 	"acourse-auth-user-service/pkg/http/requests"
 	model "acourse-auth-user-service/pkg/models"
+	"acourse-auth-user-service/pkg/notification"
 	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
@@ -24,7 +25,7 @@ func Login(c *gin.Context) {
 	pairToken, err := model.AuthenticateUser(input.Email, input.Password)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Authentication Failed"})
 		return
 	}
 
@@ -151,6 +152,10 @@ func ChangePassword(c *gin.Context) {
 	}
 
 	user.IssueResetTokenUser()
+
+	//Send Reset Token with smpt mail
+	var mailError = make(chan error)
+	go notification.Sendmail(mailError, user.ResetToken)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reset Token has been set"})
 
