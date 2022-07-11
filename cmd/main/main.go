@@ -17,7 +17,6 @@ func main() {
 
 	//Enable Gin Debugging Mode
 	//gin.SetMode(gin.ReleaseMode)
-
 	engine := gin.Default()
 
 	//Registering Routes

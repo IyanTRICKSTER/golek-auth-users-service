@@ -10,7 +10,7 @@ func IsUserAuthenticatedMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		err := tokenUtils.ValidateAccessToken(c)
 		if err != nil {
-			c.String(http.StatusUnauthorized, "Unauthorized")
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 			c.Abort()
 			return
 		}
@@ -22,7 +22,7 @@ func IsUserAllowedToRefreshTokenMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, err := tokenUtils.ValidateRefreshToken(c)
 		if err != nil {
-			c.String(http.StatusUnauthorized, "Unauthorized")
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "Unauthorized"})
 			c.Abort()
 			return
 		}

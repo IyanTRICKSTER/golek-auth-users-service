@@ -78,7 +78,6 @@ func CurrentUser(c *gin.Context) {
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
 
 	if err != nil {
-
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -90,7 +89,7 @@ func CurrentUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "success", "data": user})
+	c.JSON(http.StatusOK, user)
 }
 
 func RefreshToken(c *gin.Context) {

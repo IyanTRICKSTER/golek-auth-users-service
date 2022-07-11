@@ -21,7 +21,7 @@ func RegisterRoutes(route *gin.Engine) {
 	protected.Use(authMiddleware.IsUserAuthenticatedMiddleware())
 	protected.GET("/user/all", UserController.All)
 	protected.GET("/user/current", AuthController.CurrentUser)
-	protected.POST("/user/update/:id", UserController.Update)
+	protected.PATCH("/user/update/:id", UserController.Update)
 	protected.DELETE("/user/delete/:id", UserController.Delete)
 	protected.GET("/role", RoleController.Find)
 
