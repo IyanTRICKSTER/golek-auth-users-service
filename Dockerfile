@@ -29,6 +29,9 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait wait
+RUN chmod +x wait
+
 # Copy the Pre-built binary file from the previous stage. Observe we also copied the .env file
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env .
@@ -37,6 +40,7 @@ COPY --from=builder /app/.env .
 EXPOSE 8080
 
 #Command to run the executable
+CMD ["./wait"]
 CMD ["./main"]
 
 

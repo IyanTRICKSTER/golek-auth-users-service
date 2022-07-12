@@ -21,7 +21,8 @@ services:
 
   app:
     container_name: acourse-auth-user-service-v1
-#    environment:
+    environment:
+      WAIT_HOSTS: db:3306
 #      - APP_DEBUG="${APP_DEBUG}"
 #      - DB_HOST=db
 #      - DB_DRIVER="${DB_DRIVER}"
