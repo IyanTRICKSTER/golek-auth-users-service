@@ -2,6 +2,7 @@ package main
 
 import (
 	"acourse-auth-user-service/pkg/routes"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
@@ -18,6 +19,7 @@ func main() {
 	//Enable Gin Debugging Mode
 	//gin.SetMode(gin.ReleaseMode)
 	engine := gin.Default()
+	engine.Use(cors.Default())
 
 	//Registering Routes
 	routes.RegisterRoutes(engine)
