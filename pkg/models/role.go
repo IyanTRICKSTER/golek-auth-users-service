@@ -8,7 +8,7 @@ import (
 type Role struct {
 	ID          uint         `gorm:"primary_key" json:"id,omitempty"`
 	Name        string       `gorm:"unique" json:"name,omitempty"`
-	Users       []User       `gorm:"foreignKey:RoleID" json:"users,omitempty"`
+	Users       []User       `gorm:"foreignKey:RoleID;references:ID" json:"users,omitempty"`
 	Permissions []Permission `gorm:"many2many:role_permissions;" json:"permissions,omitempty"`
 	CreatedAt   time.Time    `json:"created_at,omitempty"`
 	UpdatedAt   time.Time    `json:"updated_at,omitempty"`

@@ -23,19 +23,19 @@ const (
 
 type User struct {
 	ID             uint           `gorm:"primary_key" json:"id,omitempty"`
-	RoleID         uint           `json:"role_id,omitempty"`
-	Role           Role           `gorm:"foreignKey:RoleID;constraint:OnUpdate:CASCADE" json:"-"`
+	RoleID         uint           `json:"-"`
+	Role           Role           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
 	Username       string         `gorm:"size:255;not null;unique;constraint:OnUpdate:CASCADE;" json:"username,omitempty"`
 	Password       string         `gorm:"size:255;not null;" json:"password,omitempty"`
 	Email          string         `gorm:"email;not null;unique;constraint:OnUpdate:CASCADE" json:"email,omitempty"`
 	Avatar         string         `json:"avatar,omitempty"`
 	PhoneNumber    string         `gorm:"constraint:OnUpdate:CASCADE;not null;unique" json:"phone_number,omitempty"`
 	Lang           Language       `json:"language,omitempty"`
-	RecommendClass bool           `gorm:"default:true" json:"recommend_class,omitempty"`
-	Promotion      bool           `gorm:"default:true" json:"promotion,omitempty"`
-	Notification   bool           `gorm:"default:true" json:"notification,omitempty"`
-	LatestNews     bool           `gorm:"default:true" json:"latest_news,omitempty"`
-	ResetToken     string         `json:"reset_token,omitempty"`
+	RecommendClass *bool          `gorm:"default:true" json:"recommend_class,omitempty"`
+	Promotion      *bool          `gorm:"default:true" json:"promotion,omitempty"`
+	Notification   *bool          `gorm:"default:true" json:"notification,omitempty"`
+	LatestNews     *bool          `gorm:"default:true" json:"latest_news,omitempty"`
+	ResetToken     string         `json:"-"`
 	CreatedAt      time.Time      `json:"created_at,omitempty"`
 	UpdatedAt      time.Time      `json:"updated_at,omitempty"`
 	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty"`
@@ -66,7 +66,7 @@ func (u *User) CreateUser() (*User, error) {
 
 	err := database.GetConnection().Create(&u).Error
 	if err != nil {
-		log.Println("CREATE USER: ", err.Error())
+		log.Println("CREATE USER ERROR: ", err.Error())
 		return &User{}, err
 	}
 	log.Println("CREATE USER: OK")
@@ -78,7 +78,7 @@ func (u *User) BeforeSave(*gorm.DB) error {
 	//turn password into hash
 	hashedPassword, err := bcryptUtils.HashPassword(u.Password)
 	if err != nil {
-		log.Println("BEFORE SAVE USER > HASHING PASSWORD: ", err.Error())
+		log.Println("BEFORE SAVE USER > HASHING PASSWORD ERROR: ", err.Error())
 		return err
 	}
 	u.Password = string(hashedPassword)
@@ -88,7 +88,7 @@ func (u *User) BeforeSave(*gorm.DB) error {
 	u.Lang = "id"
 
 	//Set Default User Role
-	u.Role = Role{ID: 2}
+	u.Role = Role{ID: 2, Name: "member"}
 
 	//remove spaces in username
 	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
@@ -102,8 +102,10 @@ func FindUser(uid uint) (User, error) {
 
 	var u User
 
-	if err := database.GetConnection().First(&u, uid).Error; err != nil {
-		log.Println("FIND A USER: ", err.Error())
+	if err := database.GetConnection().Preload("Role.Permissions", func(tx *gorm.DB) *gorm.DB {
+		return tx.Select("id", "name")
+	}).First(&u, uid).Error; err != nil {
+		log.Println("FIND A USER ERROR: ", err.Error())
 		return u, errors.New("User not found!")
 	}
 
@@ -111,6 +113,7 @@ func FindUser(uid uint) (User, error) {
 	u.ExcludeFields()
 
 	log.Println("FIND A USER: OK")
+
 	return u, nil
 
 }
@@ -119,7 +122,7 @@ func FindUserByEmail(email string) (User, error) {
 
 	var user User
 	if err := database.GetConnection().Where("email = ?", email).First(&user); errors.Is(err.Error, gorm.ErrRecordNotFound) {
-		log.Println("FIND A USER BY EMAIL: ", err)
+		log.Println("FIND A USER BY EMAIL ERROR: ", err)
 		return user, err.Error
 	}
 
@@ -142,9 +145,9 @@ func (user *User) UpdateUser(data requests.UpdateUserRecordCredential) error {
 		Promotion:      data.Promotion,
 		Notification:   data.Notification,
 		LatestNews:     data.LatestNews,
-	}); err != nil {
-		log.Println("UPDATE A USER: ", err)
-		return err.Error
+	}).Error; err != nil {
+		log.Println("UPDATE A USER ERROR: ", err.Error())
+		return err
 	}
 	log.Println("UPDATE A USER: OK")
 	return nil
@@ -154,7 +157,7 @@ func (user *User) UpdateUserPassword(password string) error {
 
 	hashedPassword, err := bcryptUtils.HashPassword(password)
 	if err != nil {
-		log.Println("UPDATE USER PASSWORD: ", err.Error())
+		log.Println("UPDATE USER PASSWORD ERROR: ", err.Error())
 		return err
 	}
 
@@ -166,9 +169,9 @@ func (user *User) UpdateUserPassword(password string) error {
 }
 
 func (user *User) DeleteUser() error {
-	if err := database.GetConnection().Delete(&user); err != nil {
-		log.Println("DELETE USER: ", err)
-		return err.Error
+	if err := database.GetConnection().Delete(&user).Error; err != nil {
+		log.Println("DELETE USER ERROR: ", err.Error())
+		return err
 	}
 	log.Println("DELETE USER: OK")
 	return nil
@@ -192,7 +195,7 @@ func VerifyUserPassword(password, hashedPassword string) error {
 
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
-		log.Println("USER VERIFY PASSWORD:", err.Error())
+		log.Println("USER VERIFY PASSWORD ERROR:", err.Error())
 		return err
 	}
 	log.Println("USER VERIFY PASSWORD: OK")
@@ -206,14 +209,14 @@ func AuthenticateUser(email string, password string) (interface{}, error) {
 	err := database.GetConnection().Model(User{}).Where("email = ?", email).Take(&u).Error
 
 	if err != nil {
-		log.Println("AUTHENTICATE USER:", err.Error())
+		log.Println("AUTHENTICATE USER ERROR:", err.Error())
 		return "", err
 	}
 
 	err = VerifyUserPassword(password, u.Password)
 
 	if err != nil && err == bcrypt.ErrMismatchedHashAndPassword {
-		log.Println("AUTHENTICATE USER:", err.Error())
+		log.Println("AUTHENTICATE USER ERROR:", err.Error())
 		return "", err
 	}
 
@@ -221,7 +224,7 @@ func AuthenticateUser(email string, password string) (interface{}, error) {
 	refreshToken, err := tokenUtils.GenerateRefershToken(u.ID)
 
 	if err != nil {
-		log.Println("AUTHENTICATE USER:", err.Error())
+		log.Println("AUTHENTICATE USER ERROR:", err.Error())
 		return "", err
 	}
 

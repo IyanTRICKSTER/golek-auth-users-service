@@ -36,9 +36,6 @@ RUN chmod +x wait
 COPY --from=builder /app/main .
 COPY --from=builder /app/.env .
 
-# Expose port 8080 to the outside world
-EXPOSE 8080
-
 #Command to run the executable
 CMD ["./wait"]
 CMD ["./main"]

@@ -73,7 +73,7 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Registration success"})
 }
 
-func CurrentUser(c *gin.Context) {
+func InstrospectToken(c *gin.Context) {
 
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
 
@@ -89,7 +89,15 @@ func CurrentUser(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	//Set Custom Response Header
+	c.Header("X-User-Id", user.Username)
+	c.Header("X-User-Role", user.Role.Name)
+
+	c.JSON(http.StatusOK, gin.H{"message": "authorized", "user": gin.H{
+		"username":    user.Username,
+		"role":        user.Role.Name,
+		"permissions": user.Role.Permissions,
+	}})
 }
 
 func RefreshToken(c *gin.Context) {
@@ -156,7 +164,7 @@ func ChangePassword(c *gin.Context) {
 	var mailError = make(chan error)
 	go notification.Sendmail(mailError, user.ResetToken)
 
-	c.JSON(http.StatusOK, gin.H{"message": "Reset Token has been set"})
+	c.JSON(http.StatusOK, gin.H{"message": "Reset Token has been sent"})
 
 }
 
@@ -221,7 +229,7 @@ func ResetPassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Password has ben changed",
+		"message": "Password has been updated",
 	})
 	return
 }

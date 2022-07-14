@@ -2,7 +2,6 @@ package routes
 
 import (
 	AuthController "acourse-auth-user-service/pkg/http/controllers/auth"
-	RoleController "acourse-auth-user-service/pkg/http/controllers/role"
 	UserController "acourse-auth-user-service/pkg/http/controllers/user"
 	authMiddleware "acourse-auth-user-service/pkg/http/middleware"
 	"github.com/gin-gonic/gin"
@@ -10,23 +9,33 @@ import (
 
 func RegisterRoutes(route *gin.Engine) {
 
-	public := route.Group("/api/auth")
+	publicRoutes := route.Group("/api/auth")
+	publicRoutes.POST("/register", AuthController.Register)
+	publicRoutes.POST("/login", AuthController.Login)
+	publicRoutes.POST("/change-password", AuthController.ChangePassword)
+	publicRoutes.POST("/reset-password", AuthController.ResetPassword)
 
-	public.POST("/register", AuthController.Register)
-	public.POST("/login", AuthController.Login)
-	public.POST("/change-password", AuthController.ChangePassword)
-	public.POST("/reset-password", AuthController.ResetPassword)
+	refreshTokenRoute := route.Group("/api/auth")
+	refreshTokenRoute.Use(authMiddleware.IsUserAllowedToRefreshTokenMiddleware())
+	refreshTokenRoute.GET("/token/refresh", AuthController.RefreshToken)
 
-	protected := route.Group("/api/auth")
-	protected.Use(authMiddleware.IsUserAuthenticatedMiddleware())
-	protected.GET("/user/all", UserController.All)
-	protected.GET("/user/current", AuthController.CurrentUser)
-	protected.PATCH("/user/update/:id", UserController.Update)
-	protected.DELETE("/user/delete/:id", UserController.Delete)
-	protected.GET("/role", RoleController.Find)
+	protectedRoutes := route.Group("/api/")
+	protectedRoutes.Use(authMiddleware.IsUserAuthenticatedMiddleware())
+	protectedRoutes.GET("/auth/introspect", AuthController.InstrospectToken)
 
-	refreshToken := route.Group("/api/auth")
-	refreshToken.Use(authMiddleware.IsUserAllowedToRefreshTokenMiddleware())
-	refreshToken.GET("/token/refresh", AuthController.RefreshToken)
+	//User Routes, each Methods implement different authorization
+	userRoute := protectedRoutes.Group("/user")
+
+	ListUserRoute := userRoute.Use(authMiddleware.CanListUserPermission())
+	ListUserRoute.GET("/all", UserController.All)
+
+	CurrentUserRoute := userRoute.Use(authMiddleware.CanReadUserPermission())
+	CurrentUserRoute.GET("/current", UserController.CurrentUser)
+
+	UpdateUserRoute := userRoute.Use(authMiddleware.CanUpdateUserPermission())
+	UpdateUserRoute.PATCH("/update/:id", UserController.Update)
+
+	DeleteUserRoute := userRoute.Use(authMiddleware.CanDeleteUserPermission())
+	DeleteUserRoute.DELETE("/delete/:id", UserController.Delete)
 
 }
