@@ -118,6 +118,26 @@ func FindUser(uid uint) (User, error) {
 
 }
 
+func IntrospectUser(uid uint, resourse string) (User, error) {
+
+	var u User
+
+	if err := database.GetConnection().Preload("Role.Permissions", func(tx *gorm.DB) *gorm.DB {
+		return tx.Select("id", "name", "code", "resource").Where("resource = ?", resourse)
+	}).First(&u, uid).Error; err != nil {
+		log.Println("INTROSPECT USER ERROR: ", err.Error())
+		return u, errors.New("User not found!")
+	}
+
+	//Hide Dangerous Field
+	u.ExcludeFields()
+
+	log.Println("INTROSPECT USER: OK")
+
+	return u, nil
+
+}
+
 func FindUserByEmail(email string) (User, error) {
 
 	var user User

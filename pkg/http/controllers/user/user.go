@@ -31,8 +31,8 @@ func All(c *gin.Context) {
 
 func CurrentUser(c *gin.Context) {
 
-	log.Println(c.Request.Header.Get("X-User-Id"))
-	log.Println(c.Request.Header.Get("X-User-Role"))
+	//log.Println(c.Request.Header.Get("X-User-Id"))
+	//log.Println(c.Request.Header.Get("X-User-Role"))
 
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
 

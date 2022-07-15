@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 )
 
@@ -75,29 +76,45 @@ func Register(c *gin.Context) {
 
 func InstrospectToken(c *gin.Context) {
 
+	//Extract Target Resource From API GATEWAY
+	targetResource := c.Request.Header.Get("X-Target-Resource")
+	log.Println("INTROSPECT TARGET RESOURCE:", targetResource)
+
+	//Extract User Id From JWT Token
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
+	//INTROSPECT USER and PERMISSIONS, determine what this User can do with Target Resource
+	user, err := model.IntrospectUser(userId, targetResource)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	user, err := model.FindUser(userId)
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	//Prepare User Permission
+	permissionCode := ""
+	for i := 0; i < len(user.Role.Permissions); i++ {
+		permissionCode += user.Role.Permissions[i].Code
 	}
+
+	log.Println("INTROSPECT USERNAME:", user.Username)
+	log.Println("INTROSPECT USER ROLE:", user.Role.Name)
+	log.Println("INTROSPECT USER PERMISSIONS:", permissionCode)
 
 	//Set Custom Response Header
 	c.Header("X-User-Id", user.Username)
 	c.Header("X-User-Role", user.Role.Name)
+	c.Header("X-User-Permission", permissionCode)
 
 	c.JSON(http.StatusOK, gin.H{"message": "authorized", "user": gin.H{
 		"username":    user.Username,
 		"role":        user.Role.Name,
 		"permissions": user.Role.Permissions,
 	}})
+	return
 }
 
 func RefreshToken(c *gin.Context) {
@@ -132,6 +149,12 @@ func RefreshToken(c *gin.Context) {
 				"access_token":  newAccessToken,
 				"refresh_token": newRefreshToken,
 			})
+			return
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Cannot Indetifiy User Id In The Given Access Token",
+			})
+			return
 		}
 
 	}
@@ -165,6 +188,7 @@ func ChangePassword(c *gin.Context) {
 	go notification.Sendmail(mailError, user.ResetToken)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Reset Token has been sent"})
+	return
 
 }
 
