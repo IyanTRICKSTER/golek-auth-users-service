@@ -1,11 +1,11 @@
 package main
 
 import (
-	AuthMiddleware "acourse-auth-user-service/pkg/http/middleware"
-	"acourse-auth-user-service/pkg/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	AuthMiddleware "golek-auth-user-service/pkg/http/middleware"
+	"golek-auth-user-service/pkg/routes"
 	"log"
 	"os"
 )

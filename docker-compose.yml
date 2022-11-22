@@ -1,10 +1,9 @@
 version: "3"
 
 services:
-
   db:
     image: mariadb:latest
-    container_name: acourse_auth_user_db
+    container_name: golek_auth_user_db
     environment:
       MYSQL_ROOT_HOST: "${DB_HOST}"
       MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
@@ -20,7 +19,7 @@ services:
       - default
 
   app:
-    container_name: acourse_auth_user_service_app
+    container_name: golek_auth_user_app
     environment:
       WAIT_HOSTS: db:${DB_PORT}
     build:

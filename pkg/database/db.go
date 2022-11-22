@@ -29,9 +29,9 @@ func Connect() {
 	//Open connection to the database
 	if conn == nil {
 
-		DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
+		DB_URL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
 
-		conn, err = gorm.Open(mysql.Open(DBURL), &gorm.Config{})
+		conn, err = gorm.Open(mysql.Open(DB_URL), &gorm.Config{})
 
 		if err != nil {
 			log.Fatal("Connection error: ", err)

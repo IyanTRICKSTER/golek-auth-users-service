@@ -22,7 +22,7 @@ func GenerateRefershToken(user_id uint) (string, error) {
 	rtClaims := refreshToken.Claims.(jwt.MapClaims)
 	rtClaims["authorized"] = true
 	rtClaims["user_id"] = user_id
-	rtClaims["exp"] = time.Now().Add(time.Second * time.Duration(token_lifespan)).Unix()
+	rtClaims["exp"] = time.Now().Add(time.Hour * (time.Duration(token_lifespan) * 24)).Unix()
 
 	return refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_TOKEN_SECRET")))
 }

@@ -1,14 +1,14 @@
 package auth
 
 import (
-	"acourse-auth-user-service/pkg/http/requests"
-	model "acourse-auth-user-service/pkg/models"
-	"acourse-auth-user-service/pkg/notification"
-	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	"golek-auth-user-service/pkg/http/requests"
+	model "golek-auth-user-service/pkg/models"
+	"golek-auth-user-service/pkg/notification"
+	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
 	"gorm.io/gorm"
 	"log"
 	"net/http"
@@ -48,7 +48,8 @@ func Register(c *gin.Context) {
 	user.Username = input.Username
 	user.Password = input.Password
 	user.Email = input.Email
-	user.PhoneNumber = input.PhoneNumber
+	user.NIM = input.NIM
+	user.NIP = input.NIP
 
 	_, err := user.CreateUser()
 
@@ -71,7 +72,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Registration success"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Registration success"})
 }
 
 func InstrospectToken(c *gin.Context) {

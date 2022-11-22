@@ -8,10 +8,11 @@ type LoginCredential struct {
 }
 
 type RegisterCredential struct {
-	Username    string `json:"username" binding:"required"`
-	Password    string `json:"password" binding:"required"`
-	Email       string `json:"email" binding:"required"`
-	PhoneNumber string `json:"phone_number" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required"`
+	NIM      string `json:"nim" binding:""`
+	NIP      string `json:"nip" binding:""`
 }
 
 type ChangePasswordCredential struct {

@@ -1,10 +1,10 @@
 package routes
 
 import (
-	AuthController "acourse-auth-user-service/pkg/http/controllers/auth"
-	UserController "acourse-auth-user-service/pkg/http/controllers/user"
-	AuthMiddleware "acourse-auth-user-service/pkg/http/middleware"
 	"github.com/gin-gonic/gin"
+	AuthController "golek-auth-user-service/pkg/http/controllers/auth"
+	UserController "golek-auth-user-service/pkg/http/controllers/user"
+	AuthMiddleware "golek-auth-user-service/pkg/http/middleware"
 )
 
 func RegisterRoutes(route *gin.Engine) {
@@ -19,7 +19,7 @@ func RegisterRoutes(route *gin.Engine) {
 	protectedRoutes.GET("/auth/introspect", AuthMiddleware.IsUserAuthenticatedMiddleware(), AuthController.InstrospectToken)
 	protectedRoutes.GET("/auth/token/refresh", AuthMiddleware.IsUserAllowedToRefreshTokenMiddleware(), AuthController.RefreshToken)
 
-	userRoute := protectedRoutes.Group("/user")
+	userRoute := protectedRoutes.Group("/user").Use(AuthMiddleware.IsUserAuthenticatedMiddleware())
 	userRoute.GET("/all", AuthMiddleware.CanListUserPermission(), UserController.All)
 	userRoute.GET("/current", AuthMiddleware.CanReadUserPermission(), UserController.CurrentUser)
 	userRoute.PATCH("/update/:id", AuthMiddleware.CanUpdateUserPermission(), UserController.Update)

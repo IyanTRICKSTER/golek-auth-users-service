@@ -1,8 +1,8 @@
 package RoleController
 
 import (
-	model "acourse-auth-user-service/pkg/models"
 	"github.com/gin-gonic/gin"
+	model "golek-auth-user-service/pkg/models"
 	"net/http"
 )
 

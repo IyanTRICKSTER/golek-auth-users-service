@@ -1,8 +1,8 @@
 package AuthMiddleware
 
 import (
-	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"github.com/gin-gonic/gin"
+	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
 	"log"
 	"net/http"
 	"strconv"

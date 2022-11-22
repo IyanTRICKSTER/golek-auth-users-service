@@ -1,11 +1,11 @@
 package UserController
 
 import (
-	"acourse-auth-user-service/pkg/http/requests"
-	model "acourse-auth-user-service/pkg/models"
-	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"golek-auth-user-service/pkg/http/requests"
+	model "golek-auth-user-service/pkg/models"
+	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
 	"gorm.io/gorm"
 	"io"
 	"log"

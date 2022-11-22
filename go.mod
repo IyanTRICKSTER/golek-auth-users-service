@@ -1,4 +1,4 @@
-module acourse-auth-user-service
+module golek-auth-user-service
 
 go 1.18
 

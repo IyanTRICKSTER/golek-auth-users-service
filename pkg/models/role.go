@@ -1,7 +1,7 @@
 package model
 
 import (
-	"acourse-auth-user-service/pkg/database"
+	"golek-auth-user-service/pkg/database"
 	"time"
 )
 

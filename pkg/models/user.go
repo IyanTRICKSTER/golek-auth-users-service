@@ -1,12 +1,12 @@
 package model
 
 import (
-	"acourse-auth-user-service/pkg/database"
-	"acourse-auth-user-service/pkg/http/requests"
-	bcryptUtils "acourse-auth-user-service/pkg/utils/bcrypt"
-	tokenUtils "acourse-auth-user-service/pkg/utils/jwt"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
+	"golek-auth-user-service/pkg/database"
+	"golek-auth-user-service/pkg/http/requests"
+	bcryptUtils "golek-auth-user-service/pkg/utils/bcrypt"
+	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
 	"gorm.io/gorm"
 	"html"
 	"log"
@@ -14,31 +14,20 @@ import (
 	"time"
 )
 
-type Language string
-
-const (
-	EN Language = "en"
-	ID Language = "id"
-)
-
 type User struct {
-	ID             uint           `gorm:"primary_key" json:"id,omitempty"`
-	RoleID         uint           `json:"-"`
-	Role           Role           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
-	Username       string         `gorm:"size:255;not null;unique;constraint:OnUpdate:CASCADE;" json:"username,omitempty"`
-	Password       string         `gorm:"size:255;not null;" json:"password,omitempty"`
-	Email          string         `gorm:"email;not null;unique;constraint:OnUpdate:CASCADE" json:"email,omitempty"`
-	Avatar         string         `json:"avatar,omitempty"`
-	PhoneNumber    string         `gorm:"constraint:OnUpdate:CASCADE;not null;unique" json:"phone_number,omitempty"`
-	Lang           Language       `json:"language,omitempty"`
-	RecommendClass *bool          `gorm:"default:true" json:"recommend_class,omitempty"`
-	Promotion      *bool          `gorm:"default:true" json:"promotion,omitempty"`
-	Notification   *bool          `gorm:"default:true" json:"notification,omitempty"`
-	LatestNews     *bool          `gorm:"default:true" json:"latest_news,omitempty"`
-	ResetToken     string         `json:"-"`
-	CreatedAt      time.Time      `json:"created_at,omitempty"`
-	UpdatedAt      time.Time      `json:"updated_at,omitempty"`
-	DeletedAt      gorm.DeletedAt `json:"deleted_at,omitempty"`
+	ID         uint           `gorm:"primary_key" json:"id,omitempty"`
+	RoleID     uint           `json:"-"`
+	Role       Role           `gorm:"constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"-"`
+	Username   string         `gorm:"size:255;not null;unique;constraint:OnUpdate:CASCADE;" json:"username,omitempty"`
+	Password   string         `gorm:"size:255;not null;" json:"password,omitempty"`
+	Email      string         `gorm:"email;not null;unique;constraint:OnUpdate:CASCADE" json:"email,omitempty"`
+	Avatar     string         `json:"avatar,omitempty"`
+	NIM        string         `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nim,omitempty"`
+	NIP        string         `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nip,omitempty"`
+	ResetToken string         `json:"-"`
+	CreatedAt  time.Time      `json:"created_at,omitempty"`
+	UpdatedAt  time.Time      `json:"updated_at,omitempty"`
+	DeletedAt  gorm.DeletedAt `json:"deleted_at,omitempty"`
 }
 
 func AllUser(limit uint, page uint) (*Pagination, error) {
@@ -52,8 +41,7 @@ func AllUser(limit uint, page uint) (*Pagination, error) {
 	}
 
 	database.GetConnection().Select(
-		"id", "role_id", "username", "email", "phone_number", "avatar", "lang",
-		"recommend_class", "promotion", "notification", "latest_news", "created_at",
+		"id", "role_id", "username", "email", "avatar", "nim", "n_ip", "created_at",
 		"updated_at", "deleted_at",
 	).Scopes(paginate(User{}, &pagination, database.GetConnection())).Find(&users)
 
@@ -84,9 +72,6 @@ func (u *User) BeforeSave(*gorm.DB) error {
 	u.Password = string(hashedPassword)
 	log.Println("BEFORE SAVE USER > HASHIING PASSWORD: OK")
 
-	//Set Default Locale
-	u.Lang = "id"
-
 	//Set Default User Role
 	u.Role = Role{ID: 2, Name: "member"}
 
@@ -106,7 +91,7 @@ func FindUser(uid uint) (User, error) {
 		return tx.Select("id", "name")
 	}).First(&u, uid).Error; err != nil {
 		log.Println("FIND A USER ERROR: ", err.Error())
-		return u, errors.New("User not found!")
+		return u, errors.New("user not found")
 	}
 
 	//Hide Dangerous Field
@@ -126,7 +111,7 @@ func IntrospectUser(uid uint, resourse string) (User, error) {
 		return tx.Select("id", "name", "code", "resource").Where("resource = ?", resourse)
 	}).First(&u, uid).Error; err != nil {
 		log.Println("INTROSPECT USER ERROR: ", err.Error())
-		return u, errors.New("User not found!")
+		return u, errors.New("user not found")
 	}
 
 	//Hide Dangerous Field
@@ -153,18 +138,12 @@ func FindUserByEmail(email string) (User, error) {
 	return user, nil
 }
 
-func (user *User) UpdateUser(data requests.UpdateUserRecordCredential) error {
+func (u *User) UpdateUser(data requests.UpdateUserRecordCredential) error {
 
-	if err := database.GetConnection().Model(&user).Find(&user).Updates(User{
-		Username:       data.Username,
-		Email:          data.Email,
-		Avatar:         data.Avatar,
-		PhoneNumber:    data.PhoneNumber,
-		Lang:           Language(data.Lang),
-		RecommendClass: data.RecommendClass,
-		Promotion:      data.Promotion,
-		Notification:   data.Notification,
-		LatestNews:     data.LatestNews,
+	if err := database.GetConnection().Model(&u).Find(&u).Updates(User{
+		Username: data.Username,
+		Email:    data.Email,
+		Avatar:   data.Avatar,
 	}).Error; err != nil {
 		log.Println("UPDATE A USER ERROR: ", err.Error())
 		return err
@@ -173,7 +152,7 @@ func (user *User) UpdateUser(data requests.UpdateUserRecordCredential) error {
 	return nil
 }
 
-func (user *User) UpdateUserPassword(password string) error {
+func (u *User) UpdateUserPassword(password string) error {
 
 	hashedPassword, err := bcryptUtils.HashPassword(password)
 	if err != nil {
@@ -181,15 +160,15 @@ func (user *User) UpdateUserPassword(password string) error {
 		return err
 	}
 
-	database.GetConnection().Model(&user).Find(&user).Updates(User{Password: string(hashedPassword)})
+	database.GetConnection().Model(&u).Find(&u).Updates(User{Password: string(hashedPassword)})
 
 	log.Println("UPDATE USER PASSWORD: OK")
 	return nil
 
 }
 
-func (user *User) DeleteUser() error {
-	if err := database.GetConnection().Delete(&user).Error; err != nil {
+func (u *User) DeleteUser() error {
+	if err := database.GetConnection().Delete(&u).Error; err != nil {
 		log.Println("DELETE USER ERROR: ", err.Error())
 		return err
 	}
@@ -197,16 +176,16 @@ func (user *User) DeleteUser() error {
 	return nil
 }
 
-func (user *User) IssueResetTokenUser() {
+func (u *User) IssueResetTokenUser() {
 
-	resetToken, _ := tokenUtils.GenerateResetToken(user.ID)
-	database.GetConnection().Model(&user).Updates(User{ResetToken: resetToken})
+	resetToken, _ := tokenUtils.GenerateResetToken(u.ID)
+	database.GetConnection().Model(&u).Updates(User{ResetToken: resetToken})
 	log.Println("USER ISSUE RESET TOKEN: OK")
 }
 
-func (user *User) RemoveResetTokenUser() {
+func (u *User) RemoveResetTokenUser() {
 
-	database.GetConnection().Model(&user).Update("reset_token", nil)
+	database.GetConnection().Model(&u).Update("reset_token", nil)
 	log.Println("USER DELETE RESET TOKEN: OK")
 
 }
