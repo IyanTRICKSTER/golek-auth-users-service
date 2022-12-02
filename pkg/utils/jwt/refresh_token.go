@@ -2,15 +2,16 @@ package token
 
 import (
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 )
 
-func GenerateRefershToken(user_id uint) (string, error) {
+func GenerateRefreshToken(user_id uint) (string, error) {
 
 	token_lifespan, err := strconv.Atoi(os.Getenv("REFRESH_TOKEN_DAY_LIFESPAN"))
 
@@ -23,6 +24,7 @@ func GenerateRefershToken(user_id uint) (string, error) {
 	rtClaims["authorized"] = true
 	rtClaims["user_id"] = user_id
 	rtClaims["exp"] = time.Now().Add(time.Hour * (time.Duration(token_lifespan) * 24)).Unix()
+	// rtClaims["exp"] = time.Now().Add(time.Minute * time.Duration(token_lifespan)).Unix()
 
 	return refreshToken.SignedString([]byte(os.Getenv("JWT_REFRESH_TOKEN_SECRET")))
 }
@@ -46,15 +48,14 @@ func ValidateRefreshToken(c *gin.Context) (*jwt.Token, error) {
 
 func ExtractRefreshToken(c *gin.Context) string {
 
-	refershToken := c.Query("refresh-token")
-	if refershToken != "" {
-		return refershToken
+	token := c.Query("refresh-token")
+	if token != "" {
+		return token
 	}
 
 	bearerToken := c.Request.Header.Get("Authorization")
 	if len(strings.Split(bearerToken, " ")) == 2 {
 		return strings.Split(bearerToken, " ")[1]
 	}
-
 	return ""
 }

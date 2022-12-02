@@ -3,7 +3,6 @@ package AuthMiddleware
 import (
 	"github.com/gin-gonic/gin"
 	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,10 +10,9 @@ import (
 
 func CanListUserPermission() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Println("Hit List User Middleware")
-		//log.Println(c.Request.Header.Get("X-User-Permission"))
+		//log.Println("Hit List User Middleware")
 		if !strings.Contains(c.Request.Header.Get("X-User-Permission"), "l") {
-			c.JSON(http.StatusForbidden, gin.H{
+			c.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Forbidden",
 			})
 			c.Abort()
@@ -26,7 +24,7 @@ func CanListUserPermission() gin.HandlerFunc {
 
 func CanReadUserPermission() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Println("Hit Read User Middleware")
+		//log.Println("Hit Read User Middleware")
 		//log.Println(c.Request.Header.Get("X-User-Permission"))
 		if !strings.Contains(c.Request.Header.Get("X-User-Permission"), "r") {
 			c.JSON(http.StatusForbidden, gin.H{
@@ -42,7 +40,7 @@ func CanReadUserPermission() gin.HandlerFunc {
 func CanUpdateUserPermission() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		log.Println("Update User Middleware")
+		//log.Println("Update User Middleware")
 		//log.Println(c.Request.Header.Get("X-User-Permission"))
 		if !strings.Contains(c.Request.Header.Get("X-User-Permission"), "u") {
 			c.JSON(http.StatusForbidden, gin.H{
@@ -85,7 +83,7 @@ func CanUpdateUserPermission() gin.HandlerFunc {
 
 func CanDeleteUserPermission() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		log.Println("Delete User Middleware")
+		//log.Println("Delete User Middleware")
 		//log.Println(c.Request.Header.Get("X-User-Permission"))
 		if !strings.Contains(c.Request.Header.Get("X-User-Permission"), "d") {
 			c.JSON(http.StatusForbidden, gin.H{

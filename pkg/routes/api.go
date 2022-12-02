@@ -16,7 +16,7 @@ func RegisterRoutes(route *gin.Engine) {
 	publicRoutes.POST("/reset-password", AuthController.ResetPassword)
 
 	protectedRoutes := route.Group("/api")
-	protectedRoutes.GET("/auth/introspect", AuthMiddleware.IsUserAuthenticatedMiddleware(), AuthController.InstrospectToken)
+	protectedRoutes.GET("/auth/introspect", AuthMiddleware.IsUserAuthenticatedMiddleware(), AuthController.IntrospectToken)
 	protectedRoutes.GET("/auth/token/refresh", AuthMiddleware.IsUserAllowedToRefreshTokenMiddleware(), AuthController.RefreshToken)
 
 	userRoute := protectedRoutes.Group("/user").Use(AuthMiddleware.IsUserAuthenticatedMiddleware())

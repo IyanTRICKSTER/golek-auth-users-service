@@ -2,16 +2,17 @@ package model
 
 import (
 	"errors"
-	"golang.org/x/crypto/bcrypt"
 	"golek-auth-user-service/pkg/database"
 	"golek-auth-user-service/pkg/http/requests"
 	bcryptUtils "golek-auth-user-service/pkg/utils/bcrypt"
 	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
-	"gorm.io/gorm"
 	"html"
 	"log"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -22,8 +23,9 @@ type User struct {
 	Password   string         `gorm:"size:255;not null;" json:"password,omitempty"`
 	Email      string         `gorm:"email;not null;unique;constraint:OnUpdate:CASCADE" json:"email,omitempty"`
 	Avatar     string         `json:"avatar,omitempty"`
-	NIM        string         `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nim,omitempty"`
-	NIP        string         `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nip,omitempty"`
+	NIM        *string        `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nim"`
+	NIP        *string        `gorm:"constraint:OnUpdate:CASCADE;null;unique" json:"nip"`
+	Major      string         `gorm:"not null" json:"major"`
 	ResetToken string         `json:"-"`
 	CreatedAt  time.Time      `json:"created_at,omitempty"`
 	UpdatedAt  time.Time      `json:"updated_at,omitempty"`
@@ -41,7 +43,7 @@ func AllUser(limit uint, page uint) (*Pagination, error) {
 	}
 
 	database.GetConnection().Select(
-		"id", "role_id", "username", "email", "avatar", "nim", "n_ip", "created_at",
+		"id", "role_id", "username", "email", "major", "avatar", "nim", "n_ip", "created_at",
 		"updated_at", "deleted_at",
 	).Scopes(paginate(User{}, &pagination, database.GetConnection())).Find(&users)
 
@@ -77,6 +79,18 @@ func (u *User) BeforeSave(*gorm.DB) error {
 
 	//remove spaces in username
 	u.Username = html.EscapeString(strings.TrimSpace(u.Username))
+
+	if u.NIP != nil {
+		if *u.NIP == "" {
+			u.NIP = nil
+		}
+	}
+
+	if u.NIM != nil {
+		if *u.NIM == "" {
+			u.NIM = nil
+		}
+	}
 
 	log.Println("BEFORE SAVE USER: OK")
 	return nil
@@ -144,6 +158,9 @@ func (u *User) UpdateUser(data requests.UpdateUserRecordCredential) error {
 		Username: data.Username,
 		Email:    data.Email,
 		Avatar:   data.Avatar,
+		NIP:      &data.NIP,
+		NIM:      &data.NIM,
+		Major:    data.Major,
 	}).Error; err != nil {
 		log.Println("UPDATE A USER ERROR: ", err.Error())
 		return err
@@ -220,7 +237,7 @@ func AuthenticateUser(email string, password string) (interface{}, error) {
 	}
 
 	token, err := tokenUtils.GenerateAccessToken(u.ID)
-	refreshToken, err := tokenUtils.GenerateRefershToken(u.ID)
+	refreshToken, err := tokenUtils.GenerateRefreshToken(u.ID)
 
 	if err != nil {
 		log.Println("AUTHENTICATE USER ERROR:", err.Error())

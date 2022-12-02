@@ -2,21 +2,24 @@ package auth
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"github.com/go-sql-driver/mysql"
 	"golek-auth-user-service/pkg/http/requests"
 	model "golek-auth-user-service/pkg/models"
 	"golek-auth-user-service/pkg/notification"
 	tokenUtils "golek-auth-user-service/pkg/utils/jwt"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/fatih/color"
+	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
+	"gorm.io/gorm"
 )
 
 func Login(c *gin.Context) {
 
-	var input requests.LoginCredential
+	var input requests.LoginCredentialRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -36,7 +39,7 @@ func Login(c *gin.Context) {
 
 func Register(c *gin.Context) {
 
-	var input requests.RegisterCredential
+	var input requests.RegisterCredentialRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -48,8 +51,9 @@ func Register(c *gin.Context) {
 	user.Username = input.Username
 	user.Password = input.Password
 	user.Email = input.Email
-	user.NIM = input.NIM
-	user.NIP = input.NIP
+	user.NIM = &input.NIM
+	user.NIP = &input.NIP
+	user.Major = input.Major
 
 	_, err := user.CreateUser()
 
@@ -75,11 +79,13 @@ func Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Registration success"})
 }
 
-func InstrospectToken(c *gin.Context) {
+func IntrospectToken(c *gin.Context) {
+
+	color.Set(color.FgYellow)
 
 	//Extract Target Resource From API GATEWAY
 	targetResource := c.Request.Header.Get("X-Target-Resource")
-	log.Println("INTROSPECT TARGET RESOURCE:", targetResource)
+	log.Println("REQUEST TARGET RESOURCE:", targetResource)
 
 	//Extract User Id From JWT Token
 	userId, err := tokenUtils.ExtractAccessTokenID(c)
@@ -96,35 +102,42 @@ func InstrospectToken(c *gin.Context) {
 	}
 
 	//Prepare User Permission
-	permissionCode := ""
-	for i := 0; i < len(user.Role.Permissions); i++ {
-		permissionCode += user.Role.Permissions[i].Code
+	var permissionCode string
+	for _, v := range user.Role.Permissions {
+		permissionCode += v.Code
 	}
 
+	log.Println("INTROSPECT USER ID:", user.ID)
 	log.Println("INTROSPECT USERNAME:", user.Username)
+	//log.Println("INTROSPECT USER MAJOR:", user.Major)
 	log.Println("INTROSPECT USER ROLE:", user.Role.Name)
 	log.Println("INTROSPECT USER PERMISSIONS:", permissionCode)
 
 	//Set Custom Response Header
-	c.Header("X-User-Id", user.Username)
+	c.Header("X-User-Id", strconv.Itoa(int(user.ID)))
 	c.Header("X-User-Role", user.Role.Name)
 	c.Header("X-User-Permission", permissionCode)
+	c.Header("X-User-Name", user.Username)
+	c.Header("X-User-Major", user.Major)
 
 	c.JSON(http.StatusOK, gin.H{"message": "authorized", "user": gin.H{
+		"user_id":     user.ID,
 		"username":    user.Username,
 		"role":        user.Role.Name,
-		"permissions": user.Role.Permissions,
+		"permissions": permissionCode,
 	}})
-	return
+
+	color.Unset()
 }
 
 func RefreshToken(c *gin.Context) {
 
+	//Validate Refresh Token
 	refreshToken, err := tokenUtils.ValidateRefreshToken(c)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"message": err,
+			"error": err,
 		})
 		return
 	}
@@ -144,11 +157,11 @@ func RefreshToken(c *gin.Context) {
 			}
 
 			newAccessToken, err := tokenUtils.GenerateAccessToken(user_id)
-			newRefreshToken, err := tokenUtils.GenerateRefershToken(user_id)
+			// newRefreshToken, err := tokenUtils.GenerateRefreshToken(user_id)
 
 			c.JSON(http.StatusOK, gin.H{
 				"access_token":  newAccessToken,
-				"refresh_token": newRefreshToken,
+				"refresh_token": "",
 			})
 			return
 		} else {
@@ -164,7 +177,7 @@ func RefreshToken(c *gin.Context) {
 
 func ChangePassword(c *gin.Context) {
 
-	var input requests.ChangePasswordCredential
+	var input requests.ChangePasswordCredentialRequest
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -195,7 +208,7 @@ func ChangePassword(c *gin.Context) {
 
 func ResetPassword(c *gin.Context) {
 
-	var input requests.ResetPasswordCredential
+	var input requests.ResetPasswordCredentialRequest
 
 	//1. Validate Reset Password Credential Input Binding
 	if err := c.ShouldBindJSON(&input); err != nil {

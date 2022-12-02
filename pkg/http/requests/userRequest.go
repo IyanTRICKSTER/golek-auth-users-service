@@ -10,5 +10,8 @@ const (
 type UpdateUserRecordCredential struct {
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
-	Avatar   string `json:"avatar" binding:"required"`
+	Avatar   string `json:"avatar" binding:""`
+	NIM      string `json:"nim" binding:""`
+	NIP      string `json:"nip" binding:""`
+	Major    string `json:"major" binding:"required"`
 }

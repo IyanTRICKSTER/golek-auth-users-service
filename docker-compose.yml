@@ -1,4 +1,4 @@
-version: "3"
+version: "3.9"
 
 services:
   db:
@@ -16,7 +16,8 @@ services:
       - db_vol:/var/lib/mysql
       - ./containers/mariadb/config:/etc/mysql
     networks:
-      - default
+      default:
+        ipv4_address: 172.53.1.4
 
   app:
     container_name: golek_auth_user_app
@@ -26,14 +27,15 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8081:${APP_PORT}
+      - ${APP_PORT}:${APP_PORT}
     restart: on-failure
     volumes:
       - app_vol:/app
     depends_on:
       - db
     networks:
-      - default
+      default:
+        ipv4_address: 172.53.1.3
 
 volumes:
   app_vol:
@@ -41,5 +43,6 @@ volumes:
 
 networks:
   default:
-    driver: bridge
+    name: golek_network_br
+    external: true
 
